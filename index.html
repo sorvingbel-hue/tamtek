@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tamtek</title>
+<style>
+* { box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; margin: 0; background: #f5f3ef; color: #1c1915; }
+header { background: #1c1915; color: #efe8dc; padding: 20px 24px; }
+header h1 { margin: 0; font-size: 22px; font-weight: 500; }
+header p { margin: 4px 0 0; font-size: 13px; opacity: 0.7; }
+.container { max-width: 800px; margin: 0 auto; padding: 20px; }
+.filters { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+.filters button { background: #fff; border: 1px solid #ddd; padding: 6px 12px; border-radius: 20px; cursor: pointer; font-size: 13px; }
+.filters button.active { background: #1c1915; color: #fff; border-color: #1c1915; }
+input { width: 100%; padding: 12px 14px; border: 1px solid #ddd; border-radius: 8px; font-size: 15px; margin-bottom: 16px; }
+.item { background: #fff; border-radius: 10px; padding: 14px 16px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #eee; }
+.item:hover { border-color: #ccc; }
+.item .left { flex: 1; }
+.item .title { font-weight: 500; margin: 0 0 2px; }
+.item .meta { font-size: 12px; color: #888; }
+.item a { color: #8d4e1f; text-decoration: none; font-size: 13px; padding: 6px 12px; border: 1px solid #e5d5c8; border-radius: 6px; }
+.item a:hover { background: #faf6f2; }
+.empty { text-align: center; color: #888; padding: 40px; }
+</style>
+</head>
+<body>
+<header>
+<h1>Tamtek</h1>
+<p>База с ссылками на Drive</p>
+</header>
+<div class="container">
+<input type="text" id="search" placeholder="Поиск по названию или разделу..." oninput="render()">
+<div class="filters" id="filters"></div>
+<div id="list"></div>
+</div>
+<script>
+const data = [
+  { title: "Навигация", section: "Главное", note: "Вход в систему", link: "https://docs.google.com/document/d/1QgSPABxYdSLth2WQKWthB-R9JLA7e6qm9AMUQ3U1tkg/edit" },
+  { title: "Инструкция", section: "Главное", note: "Правила работы", link: "https://docs.google.com/document/d/1DqA1AXTngjuGfFYu8M7EC7goRPXcbd4WX9WMBCYT0WI/edit" },
+  { title: "Неприкосновенные оригиналы", section: "Главное", note: "Реестр защищённых", link: "https://docs.google.com/document/d/1pnG1zYBNCld4fzL77Dtt6qctUxRvFcL-zOumSKDQjVg/edit" },
+  { title: "Файловая структура", section: "Главное", note: "Как лежат папки", link: "https://docs.google.com/document/d/1MsaqrruTuhSYDv3fjPbzPppvpUMCs5JrAq6PdqqmeWA/edit" },
+  { title: "3 полные статьи + переводы", section: "Общение", note: "Family Handyman, JobCloser, Projul", link: "https://docs.google.com/document/d/1ieyCYzH5B9g4TidUaIrkXsXscesUvaHiWK37D-Qyc90/edit" },
+  { title: "Статьи 4–6", section: "Общение", note: "SimplyWise, ServiceTitan, AllBetter", link: "https://docs.google.com/document/d/1Nje8FTNq6-3qhRKrrCaz4uT0yWe1fkzZQK5_d6X2gIw/edit" },
+  { title: "20 дословных кейсов", section: "Общение", note: "Непрерывные фрагменты", link: "https://docs.google.com/document/d/18WvoQsEgsbPbr7gMI6iMeJ4GNkcXJ6stajayTuQCjeE/edit" },
+  { title: "Шаблон карточки лида", section: "Шаблоны", note: "Не изменять", link: "https://docs.google.com/document/d/1_hOmq9eWjS3UBFtf2jpBxtdFTNFfetzoD3iWiLUqHVs/edit" },
+  { title: "Чеклист папки проекта", section: "Шаблоны", note: "Не изменять", link: "https://docs.google.com/document/d/1kEasqCJE7CetTjIWZPTbIhDKQUBiqqUDcNZIv6mH-ig/edit" },
+  { title: "Справки по ценам", section: "Шаблоны", note: "Не изменять", link: "https://docs.google.com/document/d/18XUsiYTrp_PLlL3ZelQsWJ8-7966KsntGkPf8tzduBA/edit" },
+  { title: "Nancy A.", section: "Лиды", note: "Обои, San Diego 92123", link: "https://docs.google.com/document/d/1iSWIUF4-GSvCMmtKHwbVIuSbjq94X9H_UWYxbAeeY40/edit" },
+  { title: "Папка Nancy A.", section: "Лиды", note: "Drive", link: "https://drive.google.com/drive/folders/1aBdvCtwOxFEIm8NEGVULqSlF8cezztlw" },
+  { title: "Папка Tamtek", section: "Папки", note: "Корень", link: "https://drive.google.com/drive/folders/13Sb2tNHrtewYV6c8sKiJ0TJMgumXuOqw" },
+  { title: "00 Главная", section: "Папки", note: "Документы", link: "https://drive.google.com/drive/folders/1aWytQE3doEaFQnVYoNdmNmuRQQ3uD5OH" },
+  { title: "01 Лиды", section: "Папки", note: "", link: "https://drive.google.com/drive/folders/1t21GS8TcABTNNUTOtg_wh1L4WHfW7oml" },
+  { title: "02 Проекты", section: "Папки", note: "", link: "https://drive.google.com/drive/folders/1dNI4ldVfiuX6DiB3P5U54CR-wx1tAzSs" },
+  { title: "03 Справки", section: "Папки", note: "", link: "https://drive.google.com/drive/folders/17UyzCagmtVhEl7psrzCfGVMRIV7TTGJF" },
+  { title: "04 Шаблоны", section: "Папки", note: "", link: "https://drive.google.com/drive/folders/1dIV9KmaKLvDv3L5aN6m_jjPhkjrHjRTM" }
+];
+
+const sections = ["Все", ...new Set(data.map(d => d.section))];
+let current = "Все";
+
+document.getElementById('filters').innerHTML = sections.map(s => 
+  `<button class="${s==='\u0412\u0441\u0435'?'active':''}" onclick="setFilter('${s}')">${s}</button>`
+).join('');
+
+function setFilter(s) {
+  current = s;
+  document.querySelectorAll('.filters button').forEach(b => b.classList.toggle('active', b.textContent === s));
+  render();
+}
+
+function render() {
+  const q = document.getElementById('search').value.toLowerCase();
+  const filtered = data.filter(d => 
+    (current === "\u0412\u0441\u0435" || d.section === current) &&
+    (d.title.toLowerCase().includes(q) || d.section.toLowerCase().includes(q) || d.note.toLowerCase().includes(q))
+  );
+  
+  document.getElementById('list').innerHTML = filtered.length ? filtered.map(d => `
+    <div class="item">
+      <div class="left">
+        <div class="title">${d.title}</div>
+        <div class="meta">${d.section}${d.note ? ' \u00b7 ' + d.note : ''}</div>
+      </div>
+      <a href="${d.link}" target="_blank">\u041e\u0442\u043a\u0440\u044b\u0442\u044c</a>
+    </div>
+  `).join('') : '<div class="empty">\u041d\u0438\u0447\u0435\u0433\u043e \u043d\u0435 \u043d\u0430\u0439\u0434\u0435\u043d\u043e</div>';
+}
+
+render();
+</script>
+</body>
+</html>
